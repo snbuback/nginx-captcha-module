@@ -1,4 +1,4 @@
-#define NGX_CONFIGURE ""
+#define NGX_CONFIGURE " --add-module=modules/ngx_recaptcha_access_filter_module"
 
 #ifndef NGX_COMPILER
 #define NGX_COMPILER  "gcc 4.2.1 (Apple Inc. build 5666) (dot 3)"

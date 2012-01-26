@@ -408,7 +408,7 @@ checking for setproctitle()
 
 Undefined symbols:
   "_setproctitle", referenced from:
-      _main in ccLC4VLw.o
+      _main in cc1Xjdyv.o
 ld: symbol(s) not found
 collect2: ld returned 1 exit status
 ----------
@@ -453,7 +453,7 @@ objs/autotest.c: In function ‘main’:
 objs/autotest.c:7: warning: assignment makes pointer from integer without a cast
 Undefined symbols:
   "_memalign", referenced from:
-      _main in ccGDxY5u.o
+      _main in ccdksvbS.o
 ld: symbol(s) not found
 collect2: ld returned 1 exit status
 ----------
@@ -531,6 +531,10 @@ checking for struct dirent.d_namlen
 
 ----------------------------------------
 checking for struct dirent.d_type
+
+
+----------------------------------------
+checking for 
 
 
 ----------------------------------------

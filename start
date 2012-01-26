@@ -6,7 +6,7 @@ finalizando() {
 }
 
 
-
+rm -rf logs/*
 objs/nginx -p . 
 trap "finalizando" SIGINT SIGTERM SIGHUP
 
