@@ -175,15 +175,17 @@ void captcha(unsigned char im[70*200], unsigned char l[6])
 
 char gen_captcha()
 {
-	char l[6];
+	char l[20];
     char ch;
     int index=0;
 	unsigned char im[70*200];
 	unsigned char gif[gifsize];
+	
 
     /* Gen CAPTCHA */
 	captcha(im,l);
 	makegif(im,gif);
+    l[6] = 0;
 
     /* Writing captcha image to file. */
     FILE *img_fp;
@@ -207,6 +209,11 @@ char gen_captcha()
 	//Usage: captcha > captcha.gif 2> letters.txt
 
 	return l; //happy
+}
+
+int main(int argc, char** argv) {
+    gen_captcha();
+    return 0;
 }
 
 char captcha_challenge()
