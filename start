@@ -1,0 +1,15 @@
+#!/bin/bash
+
+
+finalizando() {
+    objs/nginx -p . -s stop
+}
+
+
+
+objs/nginx -p . 
+trap "finalizando" SIGINT SIGTERM SIGHUP
+
+tail -f logs/*
+
+
