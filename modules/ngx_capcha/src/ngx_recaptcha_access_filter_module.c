@@ -9,6 +9,7 @@
 
 
 #include "ngx_recaptcha_access_filter_module.h"
+#include "ngx_http_libcaptcha.h"
 
 /****** CAPTCHA */
 static char * ngx_http_captcha_generate(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
@@ -593,8 +594,6 @@ ngx_recaptcha_url_encode( ngx_pool_t *pool, ngx_str_t *src, ngx_str_t *dst ) {
 
 /********** GERACAO DO CAPTCHA ********/
 
-static u_char ngx_hello_string[] = "Hello, world!";
-
 static ngx_int_t
 ngx_http_captcha_generate_handler(ngx_http_request_t *r)
 {
@@ -603,7 +602,7 @@ ngx_http_captcha_generate_handler(ngx_http_request_t *r)
     ngx_chain_t  out;
  
     /* we response to 'GET' and 'HEAD' requests only */
-    if (!(r->method & (NGX_HTTP_GET|NGX_HTTP_HEAD))) {
+    if (!(r->method & (NGX_HTTP_GET))) {
         return NGX_HTTP_NOT_ALLOWED;
     }
  
@@ -615,18 +614,11 @@ ngx_http_captcha_generate_handler(ngx_http_request_t *r)
     }
  
     /* set the 'Content-type' header */
-    r->headers_out.content_type_len = sizeof("text/html") - 1;
-    r->headers_out.content_type.len = sizeof("text/html") - 1;
-    r->headers_out.content_type.data = (u_char *) "text/html";
- 
-    /* send the header only, if the request type is http 'HEAD' */
-    if (r->method == NGX_HTTP_HEAD) {
-        r->headers_out.status = NGX_HTTP_OK;
-        r->headers_out.content_length_n = sizeof(ngx_hello_string) - 1;
- 
-        return ngx_http_send_header(r);
-    }
- 
+    r->headers_out.status = NGX_HTTP_OK;
+    r->headers_out.content_type.len = sizeof("image/gif") - 1;
+    r->headers_out.content_type.data = (u_char *) "image/gif";
+//    r->headers_out.content_length_n = 100;
+    
     /* allocate a buffer for your response body */
     b = ngx_pcalloc(r->pool, sizeof(ngx_buf_t));
     if (b == NULL) {
@@ -636,16 +628,22 @@ ngx_http_captcha_generate_handler(ngx_http_request_t *r)
     /* attach this buffer to the buffer chain */
     out.buf = b;
     out.next = NULL;
+    
+    // Gera a imagem
+    unsigned char imagem[70*200];
+    unsigned char resposta[7];
+    unsigned char gif[gifsize];
+	
+    resposta[6] = 0; // string em C precisam de um \0
+    captcha(imagem, resposta);
+    makegif(imagem, gif);
+	
  
     /* adjust the pointers of the buffer */
-    b->pos = ngx_hello_string;
-    b->last = ngx_hello_string + sizeof(ngx_hello_string) - 1;
+    b->pos = gif;
+    b->last = gif + gifsize - 1;
     b->memory = 1;    /* this buffer is in memory */
     b->last_buf = 1;  /* this is the last buffer in the buffer chain */
- 
-    /* set the status line */
-    r->headers_out.status = NGX_HTTP_OK;
-    r->headers_out.content_length_n = sizeof(ngx_hello_string) - 1;
  
     /* send the headers of your response */
     rc = ngx_http_send_header(r);
