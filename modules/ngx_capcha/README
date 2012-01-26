@@ -1,0 +1,92 @@
+Name
+    ngx_recaptcha_access_filter_module
+
+Description
+    This is a nginx module that reads HTTP POST request body encoded
+    in "application/x-www-form-urlencoded", lookup for arguments:
+	
+		recaptcha_challenge_field
+		recaptcha_response_field
+
+	and if they are present perform the reCAPTCHA validation.
+
+	Parse the Google reCAPTCHA validation responseand return 403 
+	if varification fail; otherwise goes on. 	
+	
+    You can check the validation process here:
+
+		(http://code.google.com/apis/recaptcha/docs/verify.html)
+
+	This module require libCurl (http://curl.haxx.se/download.html).
+
+Installation
+        Be sure to have installed libCurl; the module require it to
+        connect with Google reCAPTCHA verify service.
+ 
+        Get the nginx source code from nginx.net (http://nginx.org/).
+        Unpack the source code and build nginx with this module.
+
+        $ wget 'http://nginx.org/download/nginx-0.8.54.tar.gz'
+        $ tar -xzvf nginx-0.8.54.tar.gz
+        $ cd nginx-0.8.54.tar.gz/
+
+        $ git-clone git@github.com:Lus71/ngx_recaptcha_access_filter_module.git
+
+        $ ./configure --add-module=/somepath/ngx_recaptcha_access_filter_module
+        $ make -j2
+        $ make install
+
+Usage
+        recaptcha on;
+        recaptcha_private_key "YOUR GOOGLE reCAPTCHA PRIVATE KEY";
+
+    example:
+
+        #nginx.conf
+
+        location /register {
+            recaptcha on;
+            recaptcha_private_key "YOUR GOOGLE reCAPTCHA PRIVATE KEY";
+            proxy_pass http://backends
+        }
+ 
+
+Copyright & License
+    Copyright (c) 2011, Luca Sepe <luca.sepe@gmail.com>.
+
+    This module is licensed under the terms of the BSD license.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are
+    met:
+
+    *   Redistributions of source code must retain the above copyright
+        notice, this
+
+    list of conditions and the following disclaimer.
+
+    *   Redistributions in binary form must reproduce the above copyright
+        notice,
+
+    this list of conditions and the following disclaimer in the
+    documentation and/or other materials provided with the distribution.
+
+    *   Neither the name of the Taobao Inc. nor the names of its
+        contributors may be
+
+    used to endorse or promote products derived from this software without
+    specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+    IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+    TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+    PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+    HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+    SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+    TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+    PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+    LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+    NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
