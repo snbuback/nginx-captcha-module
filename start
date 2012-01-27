@@ -1,16 +1,23 @@
 #!/bin/bash
 
+NGINX_DIR=../nginx-1.0.11
+TMPDIR=/tmp/nginx
 
-finalizando() {
-    objs/nginx -p . -s stop
+finalizar() {
+    $NGINX_DIR/objs/nginx -p . -s stop
 }
 
+pushd .
+cd $NGINX_DIR
+make -j2
+popd
 
-rm -rf logs
-mkdir logs
-objs/nginx -p . 
-trap "finalizando" SIGINT SIGTERM SIGHUP
+rm -rf $TMPDIR
+mkdir -p $TMPDIR
+$NGINX_DIR/objs/nginx -p .
 
-tail -f logs/*
+trap "finalizar" SIGINT SIGTERM SIGHUP
+
+tail -f $TMPDIR/*.log
 
 

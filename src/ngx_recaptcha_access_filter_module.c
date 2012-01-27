@@ -514,7 +514,7 @@ ngx_http_captcha_generate_handler(ngx_http_request_t *r)
         
         
         rc = verifica_captcha( r, &response_val );
-        if ( rc != NGX_OK ) {
+        if ( rc == 0 ) {
             ngx_log_debug( NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "\n\n\n\n\ncaptcha not verified\n\n\n\n\n" );
             return NGX_HTTP_FORBIDDEN;
         }
@@ -554,7 +554,7 @@ ngx_http_captcha_generate_handler(ngx_http_request_t *r)
     u_char gif[gifsize];
     
     resposta[6] = 0; // string em C precisam de um \0
-    char chave[10];
+    char chave[10] = { 0 };
     
     ngx_str_t ngx_chave = ngx_string(chave);
     ngx_str_t COMBINACOES = ngx_string("0123456789abcdefgihjk");
