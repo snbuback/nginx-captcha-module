@@ -9,7 +9,7 @@
 #include <curl/easy.h>
 
 
-#include "ngx_recaptcha_access_filter_module.h"
+#include "ngx_captcha_access_filter_module.h"
 #include "ngx_http_libcaptcha.h"
 
 #define MAX_RESPOSTA 10
@@ -31,45 +31,45 @@ static memcached_st * memc = NULL;
 
 /** END MEMCACHED */
 
-static ngx_int_t ngx_recaptcha_access_filter_install(ngx_conf_t *cf);
+static ngx_int_t ngx_captcha_access_filter_install(ngx_conf_t *cf);
 
 static void *
-ngx_recaptcha_access_filter_create_conf( ngx_conf_t *cf );
+ngx_captcha_access_filter_create_conf( ngx_conf_t *cf );
 
 static char *
-ngx_recaptcha_access_filter_merge_loc_conf( ngx_conf_t *cf, void *parent, void *child );
+ngx_captcha_access_filter_merge_loc_conf( ngx_conf_t *cf, void *parent, void *child );
 
 
 static u_char *
-ngx_recaptcha_get_request_body( ngx_http_request_t *r );
+ngx_captcha_get_request_body( ngx_http_request_t *r );
 
 static void ngx_http_form_input_post_read(ngx_http_request_t *r);
 
 static ngx_int_t
-ngx_recaptcha_get_request_parameter_value( ngx_http_request_t *r, u_char *buffer, ngx_str_t *name, ngx_str_t *value );
+ngx_captcha_get_request_parameter_value( ngx_http_request_t *r, u_char *buffer, ngx_str_t *name, ngx_str_t *value );
 
 /* Module's directives  */
-static ngx_command_t  ngx_recaptcha_access_filter_commands[] = 
+static ngx_command_t  ngx_captcha_access_filter_commands[] = 
 {
-    {   ngx_string("recaptcha"),                    
+    {   ngx_string("captcha"),                    
         NGX_HTTP_LOC_CONF|NGX_HTTP_LMT_CONF|NGX_CONF_FLAG,  
         ngx_conf_set_flag_slot,                             
         NGX_HTTP_LOC_CONF_OFFSET,                           
-        offsetof(ngx_recaptcha_access_filter_loc_conf_t, enable),   
+        offsetof(ngx_captcha_access_filter_loc_conf_t, enable),   
         NULL },
 
-    {   ngx_string("recaptcha_private_key"),
+    {   ngx_string("captcha_private_key"),
         NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
         ngx_conf_set_str_slot,
         NGX_HTTP_LOC_CONF_OFFSET,
-        offsetof(ngx_recaptcha_access_filter_loc_conf_t, private_key),
+        offsetof(ngx_captcha_access_filter_loc_conf_t, private_key),
         NULL },
 
-    {   ngx_string("recaptcha_verify_url"),
+    {   ngx_string("captcha_verify_url"),
         NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
         ngx_conf_set_str_slot,
         NGX_HTTP_LOC_CONF_OFFSET,
-        offsetof(ngx_recaptcha_access_filter_loc_conf_t, verify_url),
+        offsetof(ngx_captcha_access_filter_loc_conf_t, verify_url),
         NULL },
 
     {   ngx_string("captcha_generate"),                    
@@ -84,9 +84,9 @@ static ngx_command_t  ngx_recaptcha_access_filter_commands[] =
 
 
 /* The Module Context */
-static ngx_http_module_t  ngx_recaptcha_access_filter_module_ctx = {
+static ngx_http_module_t  ngx_captcha_access_filter_module_ctx = {
     NULL,                               /* preconfiguration */
-    ngx_recaptcha_access_filter_install,    /* postconfiguration */
+    ngx_captcha_access_filter_install,    /* postconfiguration */
 
     NULL,                               /* create main configuration */
     NULL,                               /* init main configuration */
@@ -94,16 +94,16 @@ static ngx_http_module_t  ngx_recaptcha_access_filter_module_ctx = {
     NULL,                               /* create server configuration */
     NULL,                               /* merge server configuration */
 
-    ngx_recaptcha_access_filter_create_conf,        /* create location configuration */
-    ngx_recaptcha_access_filter_merge_loc_conf  /* merge location configuration */
+    ngx_captcha_access_filter_create_conf,        /* create location configuration */
+    ngx_captcha_access_filter_merge_loc_conf  /* merge location configuration */
 };
 
 
 /* Module Definition */
-ngx_module_t  ngx_recaptcha_access_filter_module = {
+ngx_module_t  ngx_captcha_access_filter_module = {
     NGX_MODULE_V1,
-    &ngx_recaptcha_access_filter_module_ctx,       /* module context */
-    ngx_recaptcha_access_filter_commands,          /* module directives */
+    &ngx_captcha_access_filter_module_ctx,       /* module context */
+    ngx_captcha_access_filter_commands,          /* module directives */
     NGX_HTTP_MODULE,                       /* module type */
     NULL,                                  /* init master */
     NULL,                                  /* init module */
@@ -118,31 +118,31 @@ ngx_module_t  ngx_recaptcha_access_filter_module = {
 
 
 static ngx_int_t
-ngx_recaptcha_access_filter_handler(ngx_http_request_t *r) {
+ngx_captcha_access_filter_handler(ngx_http_request_t *r) {
     ngx_int_t   rc;
 
-    ngx_recaptcha_access_filter_ctx_t       *ctx    = NULL;
-    ngx_recaptcha_access_filter_loc_conf_t  *lcf    = NULL;
+    ngx_captcha_access_filter_ctx_t       *ctx    = NULL;
+    ngx_captcha_access_filter_loc_conf_t  *lcf    = NULL;
 
-    ngx_str_t   response_key    = ngx_string("recaptcha_response_field");
+    ngx_str_t   response_key    = ngx_string("captcha_response_field");
     ngx_str_t   response_val    = ngx_null_string;
 
     u_char      *buffer     = NULL;
 
 
-    lcf = ngx_http_get_module_loc_conf(r, ngx_recaptcha_access_filter_module);
+    lcf = ngx_http_get_module_loc_conf(r, ngx_captcha_access_filter_module);
     if (!lcf->enable ) {
         return NGX_OK;
     }
 
 
     /* Create a new context */
-    ctx = ngx_pcalloc(r->pool, sizeof(ngx_recaptcha_access_filter_ctx_t));
+    ctx = ngx_pcalloc(r->pool, sizeof(ngx_captcha_access_filter_ctx_t));
     if (ctx == NULL) {
         return NGX_ERROR;
     }
 
-    ngx_http_set_ctx(r, ctx, ngx_recaptcha_access_filter_module);
+    ngx_http_set_ctx(r, ctx, ngx_captcha_access_filter_module);
     
     ngx_log_debug( NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "client request body successfully read" );
 
@@ -161,12 +161,12 @@ ngx_recaptcha_access_filter_handler(ngx_http_request_t *r) {
     ngx_log_debug( NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "client request body successfully read" );
     
     /* Retrieve username and pasword */
-    buffer = ngx_recaptcha_get_request_body( r );   
+    buffer = ngx_captcha_get_request_body( r );   
     if ( buffer == NULL ) {
         return NGX_HTTP_FORBIDDEN;
     }
 
-    //rc = ngx_recaptcha_get_request_parameter_value( r, buffer, &challenge_key, &challenge_val );
+    //rc = ngx_captcha_get_request_parameter_value( r, buffer, &challenge_key, &challenge_val );
     //if ( rc != NGX_OK ) {
     //    ngx_log_debug( NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "request parameter %s not found", challenge_key.data );
     //    return NGX_HTTP_FORBIDDEN;
@@ -174,7 +174,7 @@ ngx_recaptcha_access_filter_handler(ngx_http_request_t *r) {
 
     //ngx_log_debug( NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "%s value is %s", challenge_key.data, challenge_val.data );
 
-    rc = ngx_recaptcha_get_request_parameter_value( r, buffer, &response_key, &response_val );
+    rc = ngx_captcha_get_request_parameter_value( r, buffer, &response_key, &response_val );
     if ( rc != NGX_OK ) {
         ngx_log_debug( NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "request parameter %s not found", response_key.data );
         return NGX_HTTP_FORBIDDEN;
@@ -193,7 +193,7 @@ ngx_recaptcha_access_filter_handler(ngx_http_request_t *r) {
 
 
 static ngx_int_t
-ngx_recaptcha_access_filter_install(ngx_conf_t *cf) {
+ngx_captcha_access_filter_install(ngx_conf_t *cf) {
 
     ngx_http_handler_pt        *h = NULL;
     ngx_http_core_main_conf_t  *cmcf = NULL;
@@ -205,7 +205,7 @@ ngx_recaptcha_access_filter_install(ngx_conf_t *cf) {
         return NGX_ERROR;
     }
 
-    *h = ngx_recaptcha_access_filter_handler;
+    *h = ngx_captcha_access_filter_handler;
     
     // Configura o memcached
     memc = memcached(config_string, strlen(config_string));
@@ -219,12 +219,12 @@ ngx_recaptcha_access_filter_install(ngx_conf_t *cf) {
 
 
 static void *
-ngx_recaptcha_access_filter_create_conf(ngx_conf_t *cf) {
+ngx_captcha_access_filter_create_conf(ngx_conf_t *cf) {
 
-    ngx_recaptcha_access_filter_loc_conf_t *conf;
+    ngx_captcha_access_filter_loc_conf_t *conf;
 
 
-    conf = ngx_pcalloc(cf->pool, sizeof(ngx_recaptcha_access_filter_loc_conf_t));
+    conf = ngx_pcalloc(cf->pool, sizeof(ngx_captcha_access_filter_loc_conf_t));
     if (conf == NULL) {
         return NGX_CONF_ERROR;
     }
@@ -242,10 +242,10 @@ ngx_recaptcha_access_filter_create_conf(ngx_conf_t *cf) {
 
 
 static char *
-ngx_recaptcha_access_filter_merge_loc_conf( ngx_conf_t *cf, void *parent, void *child ) {
+ngx_captcha_access_filter_merge_loc_conf( ngx_conf_t *cf, void *parent, void *child ) {
 
-    ngx_recaptcha_access_filter_loc_conf_t *prev = parent;
-    ngx_recaptcha_access_filter_loc_conf_t *conf = child;
+    ngx_captcha_access_filter_loc_conf_t *prev = parent;
+    ngx_captcha_access_filter_loc_conf_t *conf = child;
 
     ngx_conf_merge_str_value( conf->private_key, prev->private_key, "null" );
     ngx_conf_merge_str_value( conf->verify_url, prev->verify_url, "http://www.google.com/recaptcha/api/verify" );
@@ -256,7 +256,7 @@ ngx_recaptcha_access_filter_merge_loc_conf( ngx_conf_t *cf, void *parent, void *
 
 
 static u_char *
-ngx_recaptcha_get_request_body( ngx_http_request_t *r ) {
+ngx_captcha_get_request_body( ngx_http_request_t *r ) {
     u_char          *buffer = NULL;
     u_char          *p  = NULL, *last = NULL;
     ngx_chain_t     *cl = NULL;
@@ -298,7 +298,7 @@ ngx_recaptcha_get_request_body( ngx_http_request_t *r ) {
 
 
 static ngx_int_t
-ngx_recaptcha_get_request_parameter_value( ngx_http_request_t *r, u_char *buffer, ngx_str_t *name, ngx_str_t *value ) {
+ngx_captcha_get_request_parameter_value( ngx_http_request_t *r, u_char *buffer, ngx_str_t *name, ngx_str_t *value ) {
     
     u_char              *p      = NULL;
     u_char              *v      = NULL; 
@@ -359,11 +359,11 @@ ngx_recaptcha_get_request_parameter_value( ngx_http_request_t *r, u_char *buffer
 
 static void ngx_http_form_input_post_read(ngx_http_request_t *r)
 {
-    ngx_recaptcha_access_filter_ctx_t     *ctx = NULL;
+    ngx_captcha_access_filter_ctx_t     *ctx = NULL;
 
     r->read_event_handler = ngx_http_request_empty_handler;
 
-    ctx = ngx_http_get_module_ctx(r, ngx_recaptcha_access_filter_module);
+    ctx = ngx_http_get_module_ctx(r, ngx_captcha_access_filter_module);
     ctx->done = 1;
 
 #if defined(nginx_version) && nginx_version >= 8011
@@ -474,7 +474,7 @@ ngx_http_captcha_generate_handler(ngx_http_request_t *r)
     ngx_buf_t   *b;
     ngx_chain_t  out;
 
-    ngx_recaptcha_access_filter_ctx_t       *ctx    = NULL;
+    ngx_captcha_access_filter_ctx_t       *ctx    = NULL;
 
     ngx_str_t   response_key    = ngx_string("valor_captcha");
     ngx_str_t   response_val    = ngx_null_string;
@@ -484,11 +484,11 @@ ngx_http_captcha_generate_handler(ngx_http_request_t *r)
     /* we response to 'GET' and 'HEAD' requests only */
    if (r->method & (NGX_HTTP_POST)) {
         /* Create a new context */
-        ctx = ngx_pcalloc(r->pool, sizeof(ngx_recaptcha_access_filter_ctx_t));
+        ctx = ngx_pcalloc(r->pool, sizeof(ngx_captcha_access_filter_ctx_t));
         if (ctx == NULL) {
             return NGX_ERROR;
         }
-        ngx_http_set_ctx(r, ctx, ngx_recaptcha_access_filter_module);
+        ngx_http_set_ctx(r, ctx, ngx_captcha_access_filter_module);
         /* Begin to read POST data */
         rc = ngx_http_read_client_request_body(r, ngx_http_form_input_post_read);
         if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
@@ -502,11 +502,11 @@ ngx_http_captcha_generate_handler(ngx_http_request_t *r)
         ngx_log_debug( NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "client request body successfully read" );
 
         /* Retrieve username and pasword */
-        buffer = ngx_recaptcha_get_request_body( r );   
+        buffer = ngx_captcha_get_request_body( r );   
         if ( buffer == NULL ) {
             return NGX_HTTP_FORBIDDEN;
         }
-        rc = ngx_recaptcha_get_request_parameter_value( r, buffer, &response_key, &response_val );
+        rc = ngx_captcha_get_request_parameter_value( r, buffer, &response_key, &response_val );
         if ( rc != NGX_OK ) {
             ngx_log_debug( NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "request parameter %s not found", response_key.data );
             return NGX_HTTP_FORBIDDEN;
