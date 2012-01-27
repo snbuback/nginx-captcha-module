@@ -718,6 +718,8 @@ ngx_http_captcha_generate_handler(ngx_http_request_t *r)
     captcha(imagem, resposta);
     makegif(imagem, gif);
     
+    escreve_cookie_sessao(r, ngx_string("CAPTCHA"), ngx_string(resposta));
+    
 
     // TODO Permitir configurar o tempo de expiração
     memcached_return_t mc_rc = memcached_set(memc, (char*)key, strlen((char*)key), (char*)resposta, strlen((char*)resposta), (time_t) 10000, (uint32_t)0);
@@ -757,7 +759,81 @@ ngx_http_captcha_generate(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 }
 
 
+/******** Funcão de leitura de cookie ******/
+// typedef struct {
+//     ngx_str_t                       name;
+//     time_t                          expires_time;
+//     ngx_str_t                       domain;
+//     ngx_str_t                       path;
+//     ngx_http_complex_value_t        *value;
+// } ngx_http_source_cookie_loc_conf_t;
 
+// int escreve_cookie_sessao(ngx_http_request_t *r, u_char *cookie, u_char *value) {
+//     
+//     ngx_http_compile_complex_value_t ccv;
+// 
+//     ngx_http_source_cookie_loc_conf_t sclc;
+//         sclc.value = ngx_palloc(cf->pool, sizeof(ngx_http_complex_value_t));
+//         if(sclc->value == NULL) {
+//             return NGX_CONF_ERROR;
+//         }
+// 
+//         ngx_memzero(&ccv, sizeof(ngx_http_compile_complex_value_t));
+// 
+//         ccv.cf = cf;
+//         ccv.value = &value[2];
+//         ccv.complex_value = sclc->value;
+// 
+//         if(ngx_http_compile_complex_value(&ccv) != NGX_OK) {
+//             return NGX_CONF_ERROR;
+//         }
+//     
+// }
+
+
+int escreve_cookie_sessao(ngx_http_request_t *r, ngx_str_t *cookie_name, ngx_str_t *cookie_value)
+
+// static ngx_int_t
+// ngx_http_userid_set_uid(ngx_http_request_t *r, ngx_http_userid_ctx_t *ctx,
+//     ngx_http_userid_conf_t *conf)
+{
+    u_char           *cookie, *p;
+    size_t            len;
+    ngx_str_t         src, dst;
+    ngx_table_elt_t  *set_cookie, *p3p;
+
+    // if (ngx_http_userid_create_uid(r, ctx, conf) != NGX_OK) {
+    //     return NGX_ERROR;
+    // }
+
+    // if (ctx->uid_set[3] == 0) {
+    //     return NGX_OK;
+    // }
+    
+    //Set-Cookie: lu=Rg3vHJZnehYLjVg7qi3bZjzg; Expires=Tue, 15 Jan 2013 21:47:38 GMT; Path=/; Domain=.foo.com; HttpOnly    
+    u_char *COOKIE_TEMPLATE = "%s=%s; Expires=-1; Path=/; Domain=%s; HttpOnly";
+    
+    u_char cookie_header[100];
+    sprintf(cookie_header, COOKIE_TEMPLATE, cookie_name.data, cookie_value.data, "localhost");
+    
+    printf("Set-Cookie: %s\n", cookie_header);
+    
+
+    set_cookie = ngx_list_push(&r->headers_out.headers);
+    if (set_cookie == NULL) {
+        return NGX_ERROR;
+    }
+
+    set_cookie->hash = 1;
+    ngx_str_set(&set_cookie->key, "Set-Cookie");
+    set_cookie->value.len = strlen(cookie_header);
+    set_cookie->value.data = cookie_header;
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "uid cookie: \"%V\"", &set_cookie->value);
+
+    return NGX_OK;
+}
 
 
 

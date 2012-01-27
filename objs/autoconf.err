@@ -406,10 +406,10 @@ objs/autotest.c:11: warning: format ‘%d’ expects type ‘int’, but argumen
 ----------------------------------------
 checking for setproctitle()
 
-Undefined symbols for architecture x86_64:
+Undefined symbols:
   "_setproctitle", referenced from:
-      _main in ccUMlZMc.o
-ld: symbol(s) not found for architecture x86_64
+      _main in ccTr2Hsp.o
+ld: symbol(s) not found
 collect2: ld returned 1 exit status
 ----------
 
@@ -451,10 +451,10 @@ checking for memalign()
 
 objs/autotest.c: In function ‘main’:
 objs/autotest.c:7: warning: assignment makes pointer from integer without a cast
-Undefined symbols for architecture x86_64:
+Undefined symbols:
   "_memalign", referenced from:
-      _main in ccKzZEQ5.o
-ld: symbol(s) not found for architecture x86_64
+      _main in ccA9KHzt.o
+ld: symbol(s) not found
 collect2: ld returned 1 exit status
 ----------
 
