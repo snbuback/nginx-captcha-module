@@ -14,6 +14,7 @@
 
 /****** CAPTCHA */
 static char * ngx_http_captcha_generate(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
+int escreve_cookie_sessao(ngx_http_request_t *r, ngx_str_t *cookie_name, ngx_str_t *cookie_value);
 
 
 
@@ -726,7 +727,10 @@ ngx_http_captcha_generate_handler(ngx_http_request_t *r)
     captcha(imagem, resposta);
     makegif(imagem, gif);
     
-    escreve_cookie_sessao(r, ngx_string("CAPTCHA"), ngx_string(resposta));
+    ngx_str_t cookie_name = ngx_string("CAPTCHA");
+    ngx_str_t cookie_value = ngx_string(resposta);
+    
+    escreve_cookie_sessao(r, &cookie_name, &cookie_value);
     
 
     // TODO Permitir configurar o tempo de expiração
@@ -805,10 +809,7 @@ int escreve_cookie_sessao(ngx_http_request_t *r, ngx_str_t *cookie_name, ngx_str
 // ngx_http_userid_set_uid(ngx_http_request_t *r, ngx_http_userid_ctx_t *ctx,
 //     ngx_http_userid_conf_t *conf)
 {
-    u_char           *cookie, *p;
-    size_t            len;
-    ngx_str_t         src, dst;
-    ngx_table_elt_t  *set_cookie, *p3p;
+    ngx_table_elt_t  *set_cookie;
 
     // if (ngx_http_userid_create_uid(r, ctx, conf) != NGX_OK) {
     //     return NGX_ERROR;
@@ -818,15 +819,17 @@ int escreve_cookie_sessao(ngx_http_request_t *r, ngx_str_t *cookie_name, ngx_str
     //     return NGX_OK;
     // }
     
+    ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "\n\n\nChamado código escreve_cookie_sessao\n\n\n");
+    
     //Set-Cookie: lu=Rg3vHJZnehYLjVg7qi3bZjzg; Expires=Tue, 15 Jan 2013 21:47:38 GMT; Path=/; Domain=.foo.com; HttpOnly    
-    u_char *COOKIE_TEMPLATE = "%s=%s; Expires=-1; Path=/; Domain=%s; HttpOnly";
+    // char COOKIE_TEMPLATE[] = "%s=%s; Expires=-1; Path=/; Domain=%s; HttpOnly";
+    char COOKIE_TEMPLATE[] = "%s=%s; Expires=-1; Path=/; HttpOnly";
     
-    u_char cookie_header[100];
-    sprintf(cookie_header, COOKIE_TEMPLATE, cookie_name.data, cookie_value.data, "localhost");
+    // FIXME
+    char* cookie_header = (char*) malloc(100);
+    sprintf(cookie_header, COOKIE_TEMPLATE, cookie_name->data, cookie_value->data/*, "localhost"*/);
     
-    printf("Set-Cookie: %s\n", cookie_header);
-    
-
     set_cookie = ngx_list_push(&r->headers_out.headers);
     if (set_cookie == NULL) {
         return NGX_ERROR;
@@ -835,7 +838,7 @@ int escreve_cookie_sessao(ngx_http_request_t *r, ngx_str_t *cookie_name, ngx_str
     set_cookie->hash = 1;
     ngx_str_set(&set_cookie->key, "Set-Cookie");
     set_cookie->value.len = strlen(cookie_header);
-    set_cookie->value.data = cookie_header;
+    set_cookie->value.data = (u_char*) cookie_header;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "uid cookie: \"%V\"", &set_cookie->value);

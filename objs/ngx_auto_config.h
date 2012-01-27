@@ -1,4 +1,9 @@
-#define NGX_CONFIGURE " --add-module=modules/ngx_capcha"
+#define NGX_CONFIGURE " --add-module=modules/ngx_capcha --with-debug"
+
+#ifndef NGX_DEBUG
+#define NGX_DEBUG  1
+#endif
+
 
 #ifndef NGX_COMPILER
 #define NGX_COMPILER  "gcc 4.2.1 (Apple Inc. build 5666) (dot 3)"
