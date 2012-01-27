@@ -656,7 +656,6 @@ ngx_http_captcha_generate_handler(ngx_http_request_t *r)
     ngx_int_t    rc;
     ngx_buf_t   *b;
     ngx_chain_t  out;
-    ngx_str_t    post_data      = ngx_null_string;
     /* we response to 'GET' and 'HEAD' requests only */
 
 
@@ -669,19 +668,28 @@ ngx_http_captcha_generate_handler(ngx_http_request_t *r)
       ngx_str_t  valor_captcha = ngx_null_string;
       u_char *buffer = NULL;
     
-      ngx_int_t r= ngx_recaptcha_get_request_parameter_value(r, buffer, &name_id_captcha, &id_captcha );
-      r= ngx_recaptcha_get_request_parameter_value(r, buffer, &name_valor_captcha, &id_captcha );
+      ngx_int_t rc= ngx_recaptcha_get_request_parameter_value(r, buffer, &name_id_captcha, &id_captcha );
+      if ( rc != NGX_OK ) {
+        ngx_log_debug( NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "request parameter %s not found", name_id_captcha.data );
+        return NGX_HTTP_FORBIDDEN;
+      }   
       
+      rc= ngx_recaptcha_get_request_parameter_value(r, buffer, &name_valor_captcha, &valor_captcha );
+      if ( rc != NGX_OK ) {
+        ngx_log_debug( NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "request parameter %s not found", name_valor_captcha.data );
+        return NGX_HTTP_FORBIDDEN;
+      }   
+      uint32_t flags; 
+      char *mcache_value = memcached_get(memc, (char *)id_captcha.data, id_captcha.len, NULL, 0, &flags); 
       
-      char *mcache_value = mem_cached_get(memc, (char *)key); 
-      
-      if (strcmp(value,  mcache_value) ) {
+      if (strcmp((char *)valor_captcha.data, mcache_value) ) {
         return NGX_HTTP_FORBIDDEN;
       } else  {
         return NGX_HTTP_OK;
       }
  
     }
+
     if (!(r->method & (NGX_HTTP_GET))) {
         return NGX_HTTP_NOT_ALLOWED;
     }
