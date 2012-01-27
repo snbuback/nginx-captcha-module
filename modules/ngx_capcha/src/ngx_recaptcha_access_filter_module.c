@@ -663,6 +663,45 @@ static void generate_random_string(ngx_str_t* buffer, const ngx_str_t* options) 
     }
 }
 
+/**
+  * Retorna 1 quando conseguiu ler o valor do cookie, que ficará em *cookie_value
+  */
+static int le_cookie(ngx_http_request_t *r, ngx_str_t *cookie_name, ngx_str_t *cookie_value) {
+    ngx_int_t                          rc;
+
+    /*
+     * Find the cookie
+     */
+    rc = ngx_http_parse_multi_header_lines(&r->headers_in.cookies,
+        cookie_name, cookie_value);
+
+    if(rc == NGX_DECLINED) {
+        return 0;
+    }
+
+    return 1;
+}
+
+/**
+  * Data uma resposta, verifica se ela é válida para a requisição corrente.
+  */
+static int verifica_captcha(ngx_http_request_t *r, ngx_str_t *resposta) {
+    
+    char captcha_key_buf[100];
+    ngx_str_t captcha_key = ngx_string(captcha_key_buf);
+    ngx_str_t cookie_name = ngx_string("CAPTCHA");
+    
+    if (!le_cookie(r, &cookie_name, &captcha_key)) {
+        return 0;
+    }
+    
+    ngx_log_debug1( NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "request captcha key cookie is %s", captcha_key.data);
+    
+    return 1;
+    
+}
+
+
 static ngx_int_t
 ngx_http_captcha_generate_handler(ngx_http_request_t *r)
 {
@@ -670,8 +709,7 @@ ngx_http_captcha_generate_handler(ngx_http_request_t *r)
     ngx_buf_t   *b;
     ngx_chain_t  out;
     /* we response to 'GET' and 'HEAD' requests only */
-
-
+    
    if (r->method & (NGX_HTTP_POST)) {
       ngx_str_t name_id_captcha =ngx_string("id_captcha");
       ngx_str_t id_captcha = ngx_null_string; 
