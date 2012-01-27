@@ -104,7 +104,7 @@ HTTP_INCS = -I src/http \
 	-I src/http/modules
 
 
-ADDON_DEPS = $(CORE_DEPS)  modules/ngx_capcha/src/ngx_recaptcha_access_filter_module.h modules/ngx_capcha/src/ngx_http_libcaptcha.h $(HTTP_DEPS)
+ADDON_DEPS = $(CORE_DEPS)  modules/ngx_capcha//src/ngx_recaptcha_access_filter_module.h modules/ngx_capcha//src/ngx_http_libcaptcha.h $(HTTP_DEPS)
 
 
 objs/nginx:	objs/src/core/nginx.o \
@@ -1063,17 +1063,17 @@ objs/src/http/modules/ngx_http_upstream_ip_hash_module.o:	$(CORE_DEPS) $(HTTP_DE
 
 
 objs/addon/src/ngx_recaptcha_access_filter_module.o:	$(ADDON_DEPS) \
-	modules/ngx_capcha/src/ngx_recaptcha_access_filter_module.c
+	modules/ngx_capcha//src/ngx_recaptcha_access_filter_module.c
 	$(CC) -c $(CFLAGS)  $(ALL_INCS) \
 		-o objs/addon/src/ngx_recaptcha_access_filter_module.o \
-		modules/ngx_capcha/src/ngx_recaptcha_access_filter_module.c
+		modules/ngx_capcha//src/ngx_recaptcha_access_filter_module.c
 
 
 objs/addon/src/ngx_http_libcaptcha.o:	$(ADDON_DEPS) \
-	modules/ngx_capcha/src/ngx_http_libcaptcha.c
+	modules/ngx_capcha//src/ngx_http_libcaptcha.c
 	$(CC) -c $(CFLAGS)  $(ALL_INCS) \
 		-o objs/addon/src/ngx_http_libcaptcha.o \
-		modules/ngx_capcha/src/ngx_http_libcaptcha.c
+		modules/ngx_capcha//src/ngx_http_libcaptcha.c
 
 
 manpage:	objs/nginx.8
