@@ -15,7 +15,7 @@
 /****** CAPTCHA */
 static char * ngx_http_captcha_generate(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 int escreve_cookie_sessao(ngx_http_request_t *r, ngx_str_t *cookie_name, ngx_str_t *cookie_value);
-
+ngx_int_t verifica_captcha(ngx_http_request_t *r, ngx_str_t resposta, ngx_str_t chave);
 
 
 /** MEMCACHED */
@@ -246,42 +246,6 @@ static ngx_command_t  ngx_recaptcha_access_filter_commands[] =
         0,   
         NULL },
 
-/*        // Configurações do memcached
-    { ngx_string("memcached_pass"),
-      NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF|NGX_CONF_TAKE1,
-      ngx_conf_set_str_array_slot,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      0,
-      NULL },
-
-    { ngx_string("memcached_connect_timeout"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
-      ngx_conf_set_msec_slot,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(ngx_http_memcached_loc_conf_t, upstream.connect_timeout),
-      NULL },
-
-    { ngx_string("memcached_send_timeout"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
-      ngx_conf_set_msec_slot,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(ngx_http_memcached_loc_conf_t, upstream.send_timeout),
-      NULL },
-
-    { ngx_string("memcached_buffer_size"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
-      ngx_conf_set_size_slot,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(ngx_http_memcached_loc_conf_t, upstream.buffer_size),
-      NULL },
-
-    { ngx_string("memcached_read_timeout"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
-      ngx_conf_set_msec_slot,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(ngx_http_memcached_loc_conf_t, upstream.read_timeout),
-      NULL },
-*/
         ngx_null_command
 };
 
@@ -398,7 +362,10 @@ ngx_recaptcha_access_filter_handler(ngx_http_request_t *r) {
 }
 
 
-
+ngx_int_t verifica_captcha(ngx_http_request_t *r, ngx_str_t resposta, ngx_str_t chave) {
+    
+     return NGX_OK;
+}
 
 static ngx_int_t
 ngx_recaptcha_access_filter_install(ngx_conf_t *cf) {
