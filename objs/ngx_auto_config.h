@@ -1,7 +1,7 @@
-#define NGX_CONFIGURE " --add-module=./modules/ngx_capcha"
+#define NGX_CONFIGURE " --add-module=modules/ngx_capcha"
 
 #ifndef NGX_COMPILER
-#define NGX_COMPILER  "gcc 4.2.1 (Apple Inc. build 5666) (dot 3)"
+#define NGX_COMPILER  "gcc 4.2.1 (Based on Apple Inc. build 5658) (LLVM build 2336.1.00)"
 #endif
 
 
@@ -56,7 +56,7 @@
 
 
 #ifndef NGX_CPU_CACHE_LINE
-#define NGX_CPU_CACHE_LINE  32
+#define NGX_CPU_CACHE_LINE  64
 #endif
 
 
@@ -144,7 +144,7 @@
 
 
 #ifndef NGX_SYS_NERR
-#define NGX_SYS_NERR  104
+#define NGX_SYS_NERR  106
 #endif
 
 

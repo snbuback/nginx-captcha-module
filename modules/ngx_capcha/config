@@ -13,7 +13,7 @@ if [ $ngx_found = yes ]; then
 	NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/src/ngx_recaptcha_access_filter_module.c $ngx_addon_dir/src/ngx_http_libcaptcha.c"
 	NGX_ADDON_DEPS="$NGX_ADDON_DEPS $ngx_addon_dir/src/ngx_recaptcha_access_filter_module.h $ngx_addon_dir/src/ngx_http_libcaptcha.h"
 	CORE_INCS="$CORE_INCS /usr/include/mysql  -DBIG_JOINS=1  -fno-strict-aliasing   -DUNIV_LINUX"
-	CORE_LIBS="$CORE_LIBS -Wl -rdynamic -lcurl"
+	CORE_LIBS="$CORE_LIBS -Wl -rdynamic -lcurl -lmemcached"
 
 else
     cat << END
