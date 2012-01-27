@@ -416,7 +416,6 @@ ngx_recaptcha_access_filter_install(ngx_conf_t *cf) {
     *h = ngx_recaptcha_access_filter_handler;
     
     // Configura o memcached
-    printf("Configurando o memcached");
     memc = memcached(config_string, strlen(config_string));
     
     // FIXME Incluir código para liberar conexao do memcached
@@ -651,6 +650,19 @@ ngx_recaptcha_url_encode( ngx_pool_t *pool, ngx_str_t *src, ngx_str_t *dst ) {
 
 /********** GERACAO DO CAPTCHA ********/
 
+
+/**
+ * Dada uma sequencia de opções de tamanho max_opcoes, gera uma string no buffer de tamanho
+ * max_tam com caracteres aleatórios de opcoes.
+ */
+static void generate_random_string(ngx_str_t* buffer, const ngx_str_t* options) {
+    
+    u_int i;
+    for (i=0; i<buffer->len; i++) {
+        buffer->data[i] = options->data[ngx_random() % options->len];
+    }
+}
+
 static ngx_int_t
 ngx_http_captcha_generate_handler(ngx_http_request_t *r)
 {
@@ -660,8 +672,6 @@ ngx_http_captcha_generate_handler(ngx_http_request_t *r)
     /* we response to 'GET' and 'HEAD' requests only */
 
 
-   unsigned char key[] = "foo";
-   
    if (r->method & (NGX_HTTP_POST)) {
       ngx_str_t name_id_captcha =ngx_string("id_captcha");
       ngx_str_t id_captcha = ngx_null_string; 
@@ -722,21 +732,32 @@ ngx_http_captcha_generate_handler(ngx_http_request_t *r)
     u_char imagem[70*200];
     u_char resposta[7];
     u_char gif[gifsize];
-	
+    
+    ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "Teste numeros aleatorias: %ld\n", ngx_random());
+
     resposta[6] = 0; // string em C precisam de um \0
+    char chave[10];
+    
+    ngx_str_t ngx_chave = ngx_string(chave);
+    ngx_str_t COMBINACOES = ngx_string("0123456789abcdefgihjk");
+    
+    generate_random_string(&ngx_chave, &COMBINACOES);
+    
     captcha(imagem, resposta);
     makegif(imagem, gif);
     
     ngx_str_t cookie_name = ngx_string("CAPTCHA");
-    ngx_str_t cookie_value = ngx_string(resposta);
+    ngx_str_t cookie_value = ngx_chave;
     
     escreve_cookie_sessao(r, &cookie_name, &cookie_value);
     
 
     // TODO Permitir configurar o tempo de expiração
-    memcached_return_t mc_rc = memcached_set(memc, (char*)key, strlen((char*)key), (char*)resposta, strlen((char*)resposta), (time_t) 10000, (uint32_t)0);
+    memcached_return_t mc_rc = memcached_set(memc, (char*) ngx_chave.data, ngx_chave.len, (char*)resposta, strlen((char*)resposta), (time_t) 10000, (uint32_t)0);
     if (mc_rc != MEMCACHED_SUCCESS) {
-        printf("Problemas ao escrever no memcached");
+        ngx_log_error(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "Problemas ao escrever no memcached");
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
@@ -771,59 +792,13 @@ ngx_http_captcha_generate(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 }
 
 
-/******** Funcão de leitura de cookie ******/
-// typedef struct {
-//     ngx_str_t                       name;
-//     time_t                          expires_time;
-//     ngx_str_t                       domain;
-//     ngx_str_t                       path;
-//     ngx_http_complex_value_t        *value;
-// } ngx_http_source_cookie_loc_conf_t;
-
-// int escreve_cookie_sessao(ngx_http_request_t *r, u_char *cookie, u_char *value) {
-//     
-//     ngx_http_compile_complex_value_t ccv;
-// 
-//     ngx_http_source_cookie_loc_conf_t sclc;
-//         sclc.value = ngx_palloc(cf->pool, sizeof(ngx_http_complex_value_t));
-//         if(sclc->value == NULL) {
-//             return NGX_CONF_ERROR;
-//         }
-// 
-//         ngx_memzero(&ccv, sizeof(ngx_http_compile_complex_value_t));
-// 
-//         ccv.cf = cf;
-//         ccv.value = &value[2];
-//         ccv.complex_value = sclc->value;
-// 
-//         if(ngx_http_compile_complex_value(&ccv) != NGX_OK) {
-//             return NGX_CONF_ERROR;
-//         }
-//     
-// }
-
-
-int escreve_cookie_sessao(ngx_http_request_t *r, ngx_str_t *cookie_name, ngx_str_t *cookie_value)
-
-// static ngx_int_t
-// ngx_http_userid_set_uid(ngx_http_request_t *r, ngx_http_userid_ctx_t *ctx,
-//     ngx_http_userid_conf_t *conf)
-{
+int escreve_cookie_sessao(ngx_http_request_t *r, ngx_str_t *cookie_name, ngx_str_t *cookie_value) {
     ngx_table_elt_t  *set_cookie;
 
-    // if (ngx_http_userid_create_uid(r, ctx, conf) != NGX_OK) {
-    //     return NGX_ERROR;
-    // }
-
-    // if (ctx->uid_set[3] == 0) {
-    //     return NGX_OK;
-    // }
-    
     ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "\n\n\nChamado código escreve_cookie_sessao\n\n\n");
     
     //Set-Cookie: lu=Rg3vHJZnehYLjVg7qi3bZjzg; Expires=Tue, 15 Jan 2013 21:47:38 GMT; Path=/; Domain=.foo.com; HttpOnly    
-    // char COOKIE_TEMPLATE[] = "%s=%s; Expires=-1; Path=/; Domain=%s; HttpOnly";
     char COOKIE_TEMPLATE[] = "%s=%s; Expires=-1; Path=/; HttpOnly";
     
     // FIXME
