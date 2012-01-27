@@ -408,7 +408,7 @@ checking for setproctitle()
 
 Undefined symbols for architecture x86_64:
   "_setproctitle", referenced from:
-      _main in ccmYgkx4.o
+      _main in ccUMlZMc.o
 ld: symbol(s) not found for architecture x86_64
 collect2: ld returned 1 exit status
 ----------
@@ -437,7 +437,7 @@ checking for pwrite()
 ----------------------------------------
 checking for sys_nerr
 
-106
+104
 ----------------------------------------
 checking for localtime_r()
 
@@ -453,7 +453,7 @@ objs/autotest.c: In function ‘main’:
 objs/autotest.c:7: warning: assignment makes pointer from integer without a cast
 Undefined symbols for architecture x86_64:
   "_memalign", referenced from:
-      _main in ccwY4TTc.o
+      _main in ccKzZEQ5.o
 ld: symbol(s) not found for architecture x86_64
 collect2: ld returned 1 exit status
 ----------
@@ -594,8 +594,6 @@ gcc -o objs/autotest objs/autotest.c -lmd5
 ----------------------------------------
 checking for OpenSSL md5 crypto library
 
-objs/autotest.c: In function ‘main’:
-objs/autotest.c:7: warning: ‘MD5_Init’ is deprecated (declared at /usr/include/openssl/md5.h:113)
 
 ----------------------------------------
 checking for sha1 in system md library
@@ -625,8 +623,6 @@ gcc -o objs/autotest objs/autotest.c -lmd
 ----------------------------------------
 checking for OpenSSL sha1 crypto library
 
-objs/autotest.c: In function ‘main’:
-objs/autotest.c:7: warning: ‘SHA1_Init’ is deprecated (declared at /usr/include/openssl/sha.h:121)
 
 ----------------------------------------
 checking for zlib library
