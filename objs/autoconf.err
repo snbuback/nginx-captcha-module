@@ -408,7 +408,7 @@ checking for setproctitle()
 
 Undefined symbols:
   "_setproctitle", referenced from:
-      _main in cceZzEOI.o
+      _main in ccG6vpuE.o
 ld: symbol(s) not found
 collect2: ld returned 1 exit status
 ----------
@@ -453,7 +453,7 @@ objs/autotest.c: In function ‘main’:
 objs/autotest.c:7: warning: assignment makes pointer from integer without a cast
 Undefined symbols:
   "_memalign", referenced from:
-      _main in ccnmnwoC.o
+      _main in ccWlNljk.o
 ld: symbol(s) not found
 collect2: ld returned 1 exit status
 ----------
