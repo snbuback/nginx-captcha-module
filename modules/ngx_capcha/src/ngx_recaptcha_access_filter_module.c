@@ -404,7 +404,6 @@ ngx_http_captcha_generate_handler(ngx_http_request_t *r)
     ngx_chain_t  out;
 
     ngx_recaptcha_access_filter_ctx_t       *ctx    = NULL;
-    ngx_recaptcha_access_filter_loc_conf_t  *lcf    = NULL;
 
     ngx_str_t   response_key    = ngx_string("valor_captcha");
     ngx_str_t   response_val    = ngx_null_string;
@@ -413,33 +412,21 @@ ngx_http_captcha_generate_handler(ngx_http_request_t *r)
 
     /* we response to 'GET' and 'HEAD' requests only */
    if (r->method & (NGX_HTTP_POST)) {
-        lcf = ngx_http_get_module_loc_conf(r, ngx_recaptcha_access_filter_module);
-        if (!lcf->enable ) {
-            return NGX_OK;
-        }
-
-
         /* Create a new context */
         ctx = ngx_pcalloc(r->pool, sizeof(ngx_recaptcha_access_filter_ctx_t));
         if (ctx == NULL) {
             return NGX_ERROR;
         }
-
         ngx_http_set_ctx(r, ctx, ngx_recaptcha_access_filter_module);
-
-        ngx_log_debug( NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "client request body successfully read" );
-
         /* Begin to read POST data */
         rc = ngx_http_read_client_request_body(r, ngx_http_form_input_post_read);
         if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
             return rc;
         }
-
         if (rc == NGX_AGAIN) {
             ctx->waiting_more_body = 1;
             return NGX_AGAIN;
         }
-
         /* Now we have post data */
         ngx_log_debug( NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "client request body successfully read" );
 
@@ -448,14 +435,18 @@ ngx_http_captcha_generate_handler(ngx_http_request_t *r)
         if ( buffer == NULL ) {
             return NGX_HTTP_FORBIDDEN;
         }
-
         rc = ngx_recaptcha_get_request_parameter_value( r, buffer, &response_key, &response_val );
         if ( rc != NGX_OK ) {
             ngx_log_debug( NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "request parameter %s not found", response_key.data );
             return NGX_HTTP_FORBIDDEN;
-        }   
-
-        ngx_log_debug( NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "%s value is %s", response_key.data, response_val.data );
+        } 
+        
+        
+        rc = verifica_captcha( r, response_val, response_val );
+        if ( rc != NGX_OK ) {
+            ngx_log_debug( NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "\n\n\n\n\ncaptcha not verified\n\n\n\n\n" );
+            return NGX_HTTP_FORBIDDEN;
+        }
         
     }
 
