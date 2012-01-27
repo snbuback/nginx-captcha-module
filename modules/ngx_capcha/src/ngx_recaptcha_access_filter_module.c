@@ -12,10 +12,11 @@
 #include "ngx_recaptcha_access_filter_module.h"
 #include "ngx_http_libcaptcha.h"
 
+#define MAX_RESPOSTA 10
 /****** CAPTCHA */
 static char * ngx_http_captcha_generate(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 int escreve_cookie_sessao(ngx_http_request_t *r, ngx_str_t *cookie_name, ngx_str_t *cookie_value);
-ngx_int_t verifica_captcha(ngx_http_request_t *r, ngx_str_t resposta, ngx_str_t chave);
+ngx_int_t verifica_captcha(ngx_http_request_t *r, ngx_str_t *resposta);
 
 
 /** MEMCACHED */
@@ -362,11 +363,6 @@ ngx_recaptcha_access_filter_handler(ngx_http_request_t *r) {
 }
 
 
-ngx_int_t verifica_captcha(ngx_http_request_t *r, ngx_str_t resposta, ngx_str_t chave) {
-    
-     return NGX_OK;
-}
-
 static ngx_int_t
 ngx_recaptcha_access_filter_install(ngx_conf_t *cf) {
 
@@ -652,11 +648,15 @@ static int le_cookie(ngx_http_request_t *r, ngx_str_t *cookie_name, ngx_str_t *c
 /**
   * Data uma resposta, verifica se ela é válida para a requisição corrente.
   */
-static int verifica_captcha(ngx_http_request_t *r, ngx_str_t *resposta) {
+ngx_int_t verifica_captcha(ngx_http_request_t *r, ngx_str_t *resposta) {
     
     char captcha_key_buf[100];
     ngx_str_t captcha_key = ngx_string(captcha_key_buf);
     ngx_str_t cookie_name = ngx_string("CAPTCHA");
+    
+    if (resposta == NULL || resposta->len == 0) {
+        return 0;
+    }
     
     if (!le_cookie(r, &cookie_name, &captcha_key)) {
         return 0;
@@ -664,8 +664,40 @@ static int verifica_captcha(ngx_http_request_t *r, ngx_str_t *resposta) {
     
     ngx_log_debug1( NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "request captcha key cookie is %s", captcha_key.data);
     
-    return 1;
     
+    
+    // char * memcached_get(memcached_st *ptr, const char *key, size_t key_length, size_t *value_length, uint32_t *flags, memcached_return_t *error);
+    // memcached_return_t mc_rc = memcached_set(memc, (char*) ngx_chave.data, ngx_chave.len, (char*)resposta, strlen((char*)resposta), (time_t) 10000, (uint32_t)0);
+    // if (mc_rc != MEMCACHED_SUCCESS) {
+    //     ngx_log_error(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+    //                    "Problemas ao escrever no memcached");
+    //     return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    // }
+    memcached_return_t mc_error;
+    ngx_str_t resposta_correta;
+    size_t tam = 0;
+    uint32_t flags;
+    resposta_correta.data = (u_char*) memcached_get(memc, (char*) captcha_key.data, captcha_key.len, &tam, &flags, &mc_error);
+    if (mc_error != MEMCACHED_SUCCESS) {
+        // FIXME diferenciar chave inexistente de conexao inexistente
+        return 0;
+    }
+    resposta_correta.len = tam;
+    
+    if (resposta_correta.len != resposta->len) {
+        ngx_log_debug2( NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "diferença no tamanho dos captchas: enviado->'%d' == '%d'<-correto", resposta->len, resposta_correta.len);
+        return 0;
+    }
+    ngx_log_debug2( NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "comparando captcha: enviado->'%s' == '%s'<-correto", resposta->data, resposta_correta.data);
+
+    int cmp = ngx_strncmp(resposta->data, resposta_correta.data, resposta_correta.len);
+    if (cmp ==0) {
+        // resposta correta
+        time_t t = 0;
+        memcached_delete(memc, (char*) captcha_key.data, captcha_key.len, t);
+        return 1;
+    }
+    return 0;
 }
 
 
@@ -738,9 +770,6 @@ ngx_http_captcha_generate_handler(ngx_http_request_t *r)
     u_char resposta[7];
     u_char gif[gifsize];
     
-    ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "Teste numeros aleatorias: %ld\n", ngx_random());
-
     resposta[6] = 0; // string em C precisam de um \0
     char chave[10];
     
@@ -755,6 +784,9 @@ ngx_http_captcha_generate_handler(ngx_http_request_t *r)
     ngx_str_t cookie_name = ngx_string("CAPTCHA");
     ngx_str_t cookie_value = ngx_chave;
     
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "Resposta captcha %s eh %s", cookie_value.data, resposta);
+
     escreve_cookie_sessao(r, &cookie_name, &cookie_value);
     
 
@@ -765,6 +797,13 @@ ngx_http_captcha_generate_handler(ngx_http_request_t *r)
                        "Problemas ao escrever no memcached");
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
+    
+    // FIXME Código de teste
+    // ngx_str_t re = ngx_string("vswrv");
+    // int v = verifica_captcha(r, &re);
+    // ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+    //                "Valida captcha retornou %d", v);
+    /// END
 
  
     /* adjust the pointers of the buffer */
