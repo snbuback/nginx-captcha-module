@@ -670,18 +670,19 @@ ngx_http_captcha_generate_handler(ngx_http_request_t *r)
       u_char *buffer = NULL;
     
       ngx_int_t r= ngx_recaptcha_get_request_parameter_value(r, buffer, &name_id_captcha, &id_captcha );
-      r= ngx_recaptcha_get_request_parameter_value(r, buffer, &name_valor_captcha, &id_captcha );
+      r= ngx_recaptcha_get_request_parameter_value(r, buffer, &name_valor_captcha, &valor_captcha );
       
       
-      char *mcache_value = mem_cached_get(memc, (char *)key); 
+      char *mcache_value = mem_cached_get(memc, id_captcha.data); 
       
-      if (strcmp(value,  mcache_value) ) {
+      if (strcmp(valor_captcha.data, mcache_value) ) {
         return NGX_HTTP_FORBIDDEN;
       } else  {
         return NGX_HTTP_OK;
       }
  
     }
+
     if (!(r->method & (NGX_HTTP_GET))) {
         return NGX_HTTP_NOT_ALLOWED;
     }
