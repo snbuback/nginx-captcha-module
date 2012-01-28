@@ -1,4 +1,4 @@
-# NGINX Captcha Filter
+# NGINX Captcha Filter (IN PROGRESS)
 
 ## Info
 
@@ -10,7 +10,7 @@ a captcha e use memcached to store correct response.
 * libmemcached
 * nginx (1.0.11)
 
-## build
+## Building
 
 	curl http://nginx.org/download/nginx-1.0.11.tar.gz | tar -zxv -
 	git clone git://github.com/snbuback/nginx-captcha-module.git

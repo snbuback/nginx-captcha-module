@@ -11,11 +11,11 @@
 
 #include "ngx_captcha_access_filter_module.h"
 #include "ngx_http_libcaptcha.h"
+#include "ngx_captcha_utils.h"
 
 #define MAX_RESPOSTA 10
 /****** CAPTCHA */
 static char * ngx_http_captcha_generate(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
-int escreve_cookie_sessao(ngx_http_request_t *r, ngx_str_t *cookie_name, ngx_str_t *cookie_value);
 ngx_int_t verifica_captcha(ngx_http_request_t *r, ngx_str_t *resposta);
 
 
@@ -570,7 +570,7 @@ ngx_http_captcha_generate_handler(ngx_http_request_t *r)
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "Resposta captcha %s eh %s", cookie_value.data, resposta);
 
-    escreve_cookie_sessao(r, &cookie_name, &cookie_value);
+    write_session_cookie(r, &cookie_name, &cookie_value);
     
 
     // TODO Permitir configurar o tempo de expiração
@@ -618,35 +618,6 @@ ngx_http_captcha_generate(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
-int escreve_cookie_sessao(ngx_http_request_t *r, ngx_str_t *cookie_name, ngx_str_t *cookie_value) {
-    ngx_table_elt_t  *set_cookie;
-
-    ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "\n\n\nChamado código escreve_cookie_sessao\n\n\n");
-    
-    //Set-Cookie: lu=Rg3vHJZnehYLjVg7qi3bZjzg; Expires=Tue, 15 Jan 2013 21:47:38 GMT; Path=/; Domain=.foo.com; HttpOnly    
-    char COOKIE_TEMPLATE[] = "%s=%s; Expires=-1; Path=/; HttpOnly";
-    
-    // FIXME
-    char* cookie_header = (char*) malloc(100);
-    sprintf(cookie_header, COOKIE_TEMPLATE, cookie_name->data, cookie_value->data/*, "localhost"*/);
-    
-    set_cookie = ngx_list_push(&r->headers_out.headers);
-    if (set_cookie == NULL) {
-        return NGX_ERROR;
-    }
-
-    set_cookie->hash = 1;
-    ngx_str_set(&set_cookie->key, "Set-Cookie");
-    set_cookie->value.len = strlen(cookie_header);
-    set_cookie->value.data = (u_char*) cookie_header;
-
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "uid cookie: \"%V\"", &set_cookie->value);
-
-    return NGX_OK;
-}
 
 
 
