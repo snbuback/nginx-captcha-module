@@ -549,9 +549,8 @@ ngx_http_captcha_generate_handler(ngx_http_request_t *r)
     out.next = NULL;
     
     // Gera a imagem
-    u_char imagem[70*200];
     u_char resposta[7];
-    u_char gif[gifsize];
+    u_char gif[CAPTCHA_BUFFER];
     
     resposta[6] = 0; // string em C precisam de um \0
     char chave[10] = { 0 };
@@ -561,8 +560,12 @@ ngx_http_captcha_generate_handler(ngx_http_request_t *r)
     
     generate_random_string(&ngx_chave, &COMBINACOES);
     
-    captcha(imagem, resposta);
-    makegif(imagem, gif);
+    ngx_str_t r2 = ngx_string(resposta);
+    
+    simple_captcha_generate(gif, &r2);
+    // 
+    // captcha(imagem, resposta);
+    // makegif(imagem, gif);
     
     ngx_str_t cookie_name = ngx_string("CAPTCHA");
     ngx_str_t cookie_value = ngx_chave;
@@ -591,7 +594,7 @@ ngx_http_captcha_generate_handler(ngx_http_request_t *r)
  
     /* adjust the pointers of the buffer */
     b->pos = gif;
-    b->last = gif + gifsize - 1;
+    b->last = gif + CAPTCHA_BUFFER - 1;
     b->memory = 1;    /* this buffer is in memory */
     b->last_buf = 1;  /* this is the last buffer in the buffer chain */
  
